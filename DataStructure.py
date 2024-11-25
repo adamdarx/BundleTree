@@ -65,7 +65,7 @@ class Bundle(object):
         self.fibre[key] = value
 
     def refine(self, refine_factor):
-        component = lambda chart, i: np.linspace(chart.small_end[i], chart.big_end[i], num=chart.grid.shape[i] + 1)
+        component = lambda chart, i: np.linspace(chart.small_end[i], chart.big_end[i], num=chart.grid.shape[i])
         interpolators = [
             RegularGridInterpolator(
                 (
@@ -81,7 +81,7 @@ class Bundle(object):
                for z in range(new_chart.grid.shape[2])]
               for y in range(new_chart.grid.shape[1])]
              for x in range(new_chart.grid.shape[0])]
-        )
+        )   # TODO: Necessary to use MPI.
         return Bundle(new_chart, self.nComp, new_fibre)
 
     def decompose(self):

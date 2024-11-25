@@ -9,12 +9,17 @@ class Chart(object):
         Basic class for creating a 3D chart for mapping local indices into absolute coordinate.
     """
 
-    def __init__(self, small_end: np.array, big_end: np.array, ngrid: np.array = (1, 1, 1)):
+    def __init__(self,
+                 small_end: np.array,
+                 big_end: np.array,
+                 nGrid: np.array = (1, 1, 1),
+                 nGhost: int = 0):
         self.small_end = small_end
         self.big_end = big_end
         # Additional "1" is due to the difference between sample points and grid points. (Tree-planting puzzle)
-        component = lambda i: np.linspace(small_end[i], big_end[i], num=ngrid[i] + 1)
+        component = lambda i: np.linspace(small_end[i], big_end[i], num=nGrid[i] + 1)
         self.grid = np.array([[[[x, y, z] for z in component(2)] for y in component(1)] for x in component(0)])
+        self.nGhost = nGhost
 
     def __getitem__(self, key):
         return self.grid[key]
@@ -65,13 +70,14 @@ class Bundle(object):
         self.fibre[key] = value
 
     def refine(self, refine_factor):
-        component = lambda chart, i: np.linspace(chart.small_end[i], chart.big_end[i], num=chart.grid.shape[i] + 1)
+        component = lambda chart, i: np.linspace(chart.small_end[i], chart.big_end[i], num=chart.grid.shape[i])
         interpolators = [
             RegularGridInterpolator(
                 (
                     component(self.chart, 0),
                     component(self.chart, 1),
-                    component(self.chart, 2)), self.fibre[:, :, :, i]
+                    component(self.chart, 2)
+                ), self.fibre[:, :, :, i]
             )
             for i in range(self.nComp)
         ]  # create an interpolator for each component
@@ -81,7 +87,7 @@ class Bundle(object):
                for z in range(new_chart.grid.shape[2])]
               for y in range(new_chart.grid.shape[1])]
              for x in range(new_chart.grid.shape[0])]
-        )
+        )   # TODO: maybe necessary to use MPI
         return Bundle(new_chart, self.nComp, new_fibre)
 
     def decompose(self):
